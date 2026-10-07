@@ -1,1 +1,1 @@
-# caso_an-lisis_im-genes_c-ncer
+# caso_analisis_imagenes_cancer
