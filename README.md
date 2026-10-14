@@ -52,6 +52,9 @@ el contenido de los PNG ni mide rendimiento predictivo.
 
 Equipo confirmado: Linux con AMD Radeon RX 6700 XT y PyTorch.
 
+Seguir [los pasos para la universidad](docs/PASOS_UNIVERSIDAD.md), desde la
+activación del entorno GPU hasta la copia de resultados al portátil.
+
 Obtener el proyecto en el ordenador de clase:
 
 ```sh
