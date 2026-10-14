@@ -1,0 +1,54 @@
+{
+  "train": {
+    "pacientes": 1097,
+    "clases_por_paciente": {
+      "0": 775,
+      "1": 322
+    },
+    "cohortes": {
+      "spy1": 104,
+      "duke": 209,
+      "spy2": 784
+    },
+    "cortes": 10945
+  },
+  "test": {
+    "pacientes": 176,
+    "clases_por_paciente": {
+      "0": 123,
+      "1": 53
+    },
+    "cohortes": {
+      "spy1": 35,
+      "duke": 42,
+      "spy2": 99
+    },
+    "cortes": 1758
+  },
+  "folds_train": {
+    "0": {
+      "0": 155,
+      "1": 64
+    },
+    "1": {
+      "0": 157,
+      "1": 62
+    },
+    "2": {
+      "0": 161,
+      "1": 59
+    },
+    "3": {
+      "0": 145,
+      "1": 75
+    },
+    "4": {
+      "0": 157,
+      "1": 62
+    }
+  },
+  "imagenes_indexadas": 38109,
+  "imagenes_comprobadas": true,
+  "imagenes_ausentes_o_vacias": 0,
+  "ejemplos_ausentes": []
+}

@@ -1,0 +1,5 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+-r requirements.txt
+torch==2.14.1+cpu
+# Versión comprobada en el portátil Windows con Python 3.11.
+# En clase conservar el PyTorch ROCm instalado; no usar este fichero para sustituirlo.

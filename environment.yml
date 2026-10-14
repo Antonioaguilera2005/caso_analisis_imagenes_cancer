@@ -1,0 +1,15 @@
+name: breastdcedl
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - numpy
+  - pandas
+  - pillow
+  - matplotlib
+  - scikit-learn
+  - requests
+  - pip:
+      - pypdf
+# Instalar PyTorch aparte según el equipo; conservar el entorno GPU de clase.

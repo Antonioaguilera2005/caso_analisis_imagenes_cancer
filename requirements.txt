@@ -1,0 +1,9 @@
+# Preparación y exploración en el portátil (Python 3.11).
+# PyTorch se configura aparte según el equipo.
+numpy
+pandas
+pillow
+matplotlib
+scikit-learn
+requests
+pypdf

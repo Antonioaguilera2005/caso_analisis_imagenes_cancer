@@ -1,0 +1,86 @@
+[
+  {
+    "pid": "ACRIN-6698-103939",
+    "cohorte": "spy2",
+    "pCR": 0,
+    "cortes": 10,
+    "muestra_visualizada": "ACRIN-6698-103939_z011",
+    "medias_tejido_PRE_EARLY_LATE": [
+      0.24294766038656235,
+      0.5179456830024719,
+      0.5034755200147629
+    ],
+    "realce_medio": 0.27499802261590955,
+    "late_menor_early": true
+  },
+  {
+    "pid": "ACRIN-6698-108969",
+    "cohorte": "spy2",
+    "pCR": 1,
+    "cortes": 10,
+    "muestra_visualizada": "ACRIN-6698-108969_z026",
+    "medias_tejido_PRE_EARLY_LATE": [
+      0.2691684752702713,
+      0.3949963867664337,
+      0.4430634468793869
+    ],
+    "realce_medio": 0.1258279114961624,
+    "late_menor_early": false
+  },
+  {
+    "pid": "Breast_MRI_005",
+    "cohorte": "duke",
+    "pCR": 1,
+    "cortes": 10,
+    "muestra_visualizada": "Breast_MRI_005_z025",
+    "medias_tejido_PRE_EARLY_LATE": [
+      0.303758504986763,
+      0.5428779482841491,
+      0.5239921569824219
+    ],
+    "realce_medio": 0.23911944329738616,
+    "late_menor_early": true
+  },
+  {
+    "pid": "Breast_MRI_010",
+    "cohorte": "duke",
+    "pCR": 0,
+    "cortes": 10,
+    "muestra_visualizada": "Breast_MRI_010_z016",
+    "medias_tejido_PRE_EARLY_LATE": [
+      0.21279438883066176,
+      0.36674122214317323,
+      0.3829511970281601
+    ],
+    "realce_medio": 0.15394683331251147,
+    "late_menor_early": false
+  },
+  {
+    "pid": "ISPY1_1001",
+    "cohorte": "spy1",
+    "pCR": 0,
+    "cortes": 10,
+    "muestra_visualizada": "ISPY1_1001_z017",
+    "medias_tejido_PRE_EARLY_LATE": [
+      0.334437420964241,
+      0.4302121937274933,
+      0.46247753500938416
+    ],
+    "realce_medio": 0.0957747727632523,
+    "late_menor_early": false
+  },
+  {
+    "pid": "ISPY1_1011",
+    "cohorte": "spy1",
+    "pCR": 1,
+    "cortes": 10,
+    "muestra_visualizada": "ISPY1_1011_z008",
+    "medias_tejido_PRE_EARLY_LATE": [
+      0.24244413077831267,
+      0.33435182869434354,
+      0.33132496774196624
+    ],
+    "realce_medio": 0.09190769791603087,
+    "late_menor_early": true
+  }
+]
