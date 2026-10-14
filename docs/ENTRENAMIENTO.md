@@ -119,12 +119,22 @@ no incluyen la incertidumbre debida a la elección de modelo o de época.
 
 ## Archivos de cada experimento
 
+La terminal muestra dispositivo/GPU, parámetros, pacientes train/val y configuración.
+Por época muestra train_loss online, train_eval_loss y val_loss objetivo,
+ROC-AUC train/validación, PR-AUC de validación, AP, sensibilidad, especificidad,
+F1 macro, lr y segundos. Las métricas predictivas son por paciente, con media de
+cortes y umbral 0.5. PR-AUC es el área trapezoidal; AP es average precision y puede
+tener un valor distinto. La tasa de aprendizaje es fija en esta receta; no hay
+scheduler ni rama clínica. Los datos se imprimen también en la prueba técnica.
+
 - `config.json`: decisiones, partición, parámetros y hashes de índice/utilidades.
 - `entorno.json`: Python, paquetes, backend y dispositivo.
 - `particion_train.csv`, `particion_val.csv`: muestras exactas de cada partición.
 - `historial.json`: pérdida online, BCE train/validación sin aumentos, AUC por
   paciente en ambas particiones y tiempo por época. La BCE de las curvas principales
   se calcula sin ponderar en ambas particiones; también se guarda la pérdida objetivo.
+- `entrenamiento.log`: copia legible de la salida de terminal, incluida selección
+  de época, parada y resumen final. Se mantiene en runs/, fuera de Git.
 - `checkpoints/epoca_001.pt`, etc.: pesos, optimizador y métricas de cada época.
   Se escriben primero a un archivo temporal y se sustituyen al terminar la escritura.
 - `seleccion.json`: ruta y criterio del checkpoint elegido por validación.

@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
+from sklearn.metrics import auc, average_precision_score, precision_recall_curve
 from torch import nn
 from torch.utils.data import DataLoader
 
@@ -92,6 +93,15 @@ def evaluar_epoca(modelo, dl, filas, dispositivo, peso):
         logits, etiquetas, pos_weight=torch.tensor(peso)).item()
     probs = torch.sigmoid(logits).numpy()
     metricas = uc.evaluar_por_paciente(probs, filas, metodo="mean", umbral=0.5)
+    pacientes = uc.agregar_por_paciente(filas.patient_id, probs, metodo="mean")
+    pacientes = pacientes.join(filas.groupby("patient_id").pCR.first())
+    precision, recall, _ = precision_recall_curve(pacientes.pCR, pacientes.prob)
+    metricas["pr_auc"] = float(auc(recall, precision))
+    metricas["average_precision"] = float(average_precision_score(pacientes.pCR, pacientes.prob))
+    c = metricas["matriz_confusion"]
+    f1_pos = 2 * c["VP"] / (2 * c["VP"] + c["FP"] + c["FN"]) if 2 * c["VP"] + c["FP"] + c["FN"] else 0.0
+    f1_neg = 2 * c["VN"] / (2 * c["VN"] + c["FP"] + c["FN"]) if 2 * c["VN"] + c["FP"] + c["FN"] else 0.0
+    metricas["f1_macro"] = (f1_pos + f1_neg) / 2
     return dict(bce=bce, bce_objetivo=bce_ponderada, **metricas)
 
 
@@ -153,6 +163,21 @@ def ejecutar(args, perdida, tr, va, directorio):
         entorno["gpu"] = torch.cuda.get_device_name(dispositivo)
         torch.cuda.reset_peak_memory_stats(dispositivo)
     guardar_json(directorio / "entorno.json", entorno)
+    lineas_log = []
+
+    def informar(mensaje):
+        print(mensaje, flush=True)
+        lineas_log.append(mensaje)
+        (directorio / "entrenamiento.log").write_text("\n".join(lineas_log) + "\n", encoding="utf-8")
+
+    informar(f"{perdida} | fold={args.fold} | dispositivo={dispositivo} "
+             f"| gpu={entorno.get('gpu', 'no utilizada')} | parametros={config['parametros']} "
+             f"| pacientes train/val={config['pacientes_train']}/{config['pacientes_val']}")
+    informar(f"entrada=solo imagenes PRE/EARLY/LATE | perdida={perdida} | pos_weight={peso:.4f} "
+             f"| batch={args.batch_size} | lr={args.lr:g} | semilla={args.semilla} "
+             f"| agregacion=mean | umbral_referencia=0.5")
+    if args.prueba:
+        informar("PRUEBA TECNICA: estas metricas no estiman el rendimiento del proyecto.")
     tr[["sample_id", "patient_id", "pCR", "fold"]].to_csv(directorio / "particion_train.csv", index=False)
     va[["sample_id", "patient_id", "pCR", "fold"]].to_csv(directorio / "particion_val.csv", index=False)
     mejor, sin_mejora, historial = -math.inf, 0, []
@@ -185,11 +210,21 @@ def ejecutar(args, perdida, tr, va, directorio):
                         loss_train_eval_objetivo=evaluacion_train["bce_objetivo"],
                         loss_val_objetivo=evaluacion_val["bce_objetivo"],
                         auc_train=evaluacion_train["auc"], auc_val=metricas["auc"],
+                        pr_auc_train=evaluacion_train["pr_auc"], pr_auc_val=metricas["pr_auc"],
+                        average_precision_train=evaluacion_train["average_precision"],
+                        average_precision_val=metricas["average_precision"],
+                        lr=float(optimizador.param_groups[0]["lr"]),
                         segundos=time.perf_counter() - inicio, **metricas)
         historial.append(registro)
         guardar_json(directorio / "historial.json", historial)
-        print(f"{perdida} | época {epoca}: loss={registro['loss_train']:.4f}, "
-              f"AUC paciente={metricas['auc']:.4f}, tiempo={registro['segundos']:.1f}s", flush=True)
+        informar(f"epoch={epoca:03d} train_loss={registro['loss_train']:.4f} "
+                 f"train_eval_loss={registro['loss_train_eval_objetivo']:.4f} "
+                 f"val_loss={registro['loss_val_objetivo']:.4f} "
+                 f"train_roc_auc={registro['auc_train']:.4f} "
+                 f"patient_roc_auc={metricas['auc']:.4f} patient_pr_auc={metricas['pr_auc']:.4f} "
+                 f"AP={metricas['average_precision']:.4f} "
+                 f"recall_pcr={metricas['sensibilidad']:.4f} especificidad={metricas['especificidad']:.4f} "
+                 f"f1_macro={metricas['f1_macro']:.4f} lr={registro['lr']:g} time={registro['segundos']:.1f}s")
         ruta_checkpoint = checkpoints / f"epoca_{epoca:03d}.pt"
         temporal = ruta_checkpoint.with_suffix(".pt.tmp")
         torch.save({"state_dict": modelo.state_dict(), "optimizer_state_dict": optimizador.state_dict(),
@@ -204,9 +239,11 @@ def ejecutar(args, perdida, tr, va, directorio):
                 "epoca": epoca, "auc_val": mejor,
                 "criterio": "Máxima AUC por paciente con media de cortes; primer máximo en empates",
             })
+            informar(f"Seleccion actual: epoca={epoca:03d} val_auc={mejor:.4f} checkpoint={ruta_checkpoint.name}")
         else:
             sin_mejora += 1
         if sin_mejora >= args.paciencia:
+            informar(f"Early stopping: {sin_mejora} epocas sin mejora de ROC-AUC por paciente.")
             break
     duracion = time.perf_counter() - inicio_total
     checkpoint = torch.load(checkpoint_elegido, map_location=dispositivo, weights_only=True)
@@ -231,6 +268,8 @@ def ejecutar(args, perdida, tr, va, directorio):
         "sha256_checkpoint": hashlib.sha256(checkpoint_elegido.read_bytes()).hexdigest(),
         "advertencia": "Prueba técnica sin valor predictivo" if args.prueba else "Resultados de validación interna; test no evaluado",
     })
+    informar(f"Finalizado {perdida}: epoca elegida={checkpoint['epoca']} AUC={checkpoint['auc_val']:.4f} "
+             f"tiempo_total={duracion:.1f}s | resultados={directorio}")
     return dict(perdida=perdida, epoca=checkpoint["epoca"], **resultados["mean"])
 
 
