@@ -26,6 +26,8 @@ Excluye test. Selecciona checkpoint por AUC de validación a nivel paciente,
 agregando la media de probabilidades. Después registra también mediana y máximo
 con umbral 0.5. El umbral todavía no está optimizado y estas comparaciones no
 cierran la receta del modelo final. No hay evaluación de test en este script.
+Siguiendo la aclaración del profesor, la evaluación principal utiliza la media;
+las otras agregaciones son análisis secundarios, no la receta principal.
 
 La comparación normal/ponderada reinicia modelo, semilla, optimizador y generador
 de datos para cada pérdida. pos_weight es N0/N1 de los cortes de entrenamiento
@@ -90,17 +92,51 @@ paciencia 8, semilla 42. Si falta memoria, reducir batch y documentar el cambio.
 Para otros folds, cambiar `--fold` y `--salida`; la carpeta debe ser nueva.
 Guardar el diagnóstico junto con los resultados que se traigan al portátil.
 
+Para la comparación completa de cinco folds y ambas pérdidas:
+
+```bash
+python validacion_cruzada.py --dispositivo cuda --workers 2 --salida runs/cv5_v2
+```
+
+Ejecuta los diez entrenamientos secuencialmente y genera el análisis en
+`runs/cv5_v2/analisis`. Esta versión registra train y validación por época, por
+lo que el fold inicial antiguo debe repetirse para disponer de todas sus curvas.
+Ese registro añade un pase de evaluación sobre train en cada época; los tiempos
+de la primera versión no se extrapolan directamente a la nueva.
+El análisis rechaza pruebas técnicas y valida las particiones y las predicciones.
+No mezcla recetas diferentes entre folds. Con menos de cinco folds, identifica
+la CV como incompleta y no inventa una desviación de cinco folds.
+
+Para analizar resultados existentes sin reentrenar:
+
+```bash
+python analizar_resultados.py --runs runs/fold0_semilla42 --salida runs/analisis_fold0_nuevo
+```
+
+La salida contiene PNG, CSV, JSON e informe Markdown. Siempre elegir una carpeta
+nueva. Los intervalos de AUC se obtienen por bootstrap estratificado de pacientes;
+no incluyen la incertidumbre debida a la elección de modelo o de época.
+
 ## Archivos de cada experimento
 
 - `config.json`: decisiones, partición, parámetros y hashes de índice/utilidades.
 - `entorno.json`: Python, paquetes, backend y dispositivo.
 - `particion_train.csv`, `particion_val.csv`: muestras exactas de cada partición.
-- `historial.json`: pérdida de entrenamiento, métricas por paciente y tiempo por época.
-- `mejor.pt`: pesos y época seleccionada; no es un modelo final cerrado.
+- `historial.json`: pérdida online, BCE train/validación sin aumentos, AUC por
+  paciente en ambas particiones y tiempo por época. La BCE de las curvas principales
+  se calcula sin ponderar en ambas particiones; también se guarda la pérdida objetivo.
+- `checkpoints/epoca_001.pt`, etc.: pesos, optimizador y métricas de cada época.
+  Se escriben primero a un archivo temporal y se sustituyen al terminar la escritura.
+- `seleccion.json`: ruta y criterio del checkpoint elegido por validación.
+  Los pesos anteriores no se sobrescriben. No se crea un nuevo `mejor.pt`.
 - `predicciones_cortes_val.csv`: identificadores y probabilidades alineadas.
 - `predicciones_pacientes_*.csv`, `metricas_val.json`: agregaciones y baseline de clase cero.
 - `ejecucion.json`: duración, pico de memoria GPU asignada y checksum.
 - `comparacion.json`: comparación de pérdidas usando agregación mean y umbral 0.5.
+
+Las ejecuciones antiguas conservan su `mejor.pt`, que sigue siendo válido. No
+pueden reconstruirse retrospectivamente los pesos ni las curvas no registrados.
+Guardar todos los checkpoints no significa elegirlos mirando test.
 
 Los JSON guardan null cuando una métrica, como precisión sin positivos predichos,
 es indefinida. Los experimentos no sobrescriben una carpeta anterior.
@@ -113,6 +149,10 @@ ver [reproducibilidad en PyTorch](https://docs.pytorch.org/docs/2.14/notes/rando
 Examinar sobreajuste, sensibilidad/especificidad, estabilidad entre folds,
 agregación, umbral, calibración y cohortes. Cerrar el modelo antes de evaluar
 test. Preparar después aplicación web, informe y cinco diapositivas.
+El análisis del umbral maximiza F1 macro solo como exploración. Sus métricas
+ajustadas en la misma validación son optimistas; no es una decisión clínica.
+Definir y justificar el coste educativo de FP/FN antes de cerrar el umbral final.
+Más criterios: [CRITERIOS_ANALISIS.md](CRITERIOS_ANALISIS.md).
 
 ## Atribución del dataset
 

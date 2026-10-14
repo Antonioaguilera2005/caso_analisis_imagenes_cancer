@@ -87,6 +87,11 @@ Consultar [las instrucciones de entrenamiento](docs/ENTRENAMIENTO.md) y
 [el plan de experimentos](docs/PLAN_EXPERIMENTOS.md) para las órdenes de pruebas,
 entrenamiento en clase, comparación de pérdidas y criterios de selección.
 
+La comparación completa se ejecuta con `validacion_cruzada.py`; el análisis
+genera PNG con `analizar_resultados.py`. Se guarda un checkpoint por época y
+se señala el elegido en `seleccion.json`. Los resultados y sus gráficas se
+conservan localmente en `runs/` y se transportan fuera de GitHub.
+
 1. Revisar el enunciado y explorar imágenes y metadatos.
 2. Validar etiquetas y separación por paciente con los folds dados.
 3. Implementar una CNN propia desde cero, con un logit de salida.

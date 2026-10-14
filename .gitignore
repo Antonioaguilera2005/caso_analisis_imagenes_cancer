@@ -225,3 +225,10 @@ artifacts/
 *.pt
 *.pth
 diagnostico_entorno.json
+
+# Gráficas, métricas y paquetes de resultados de entrenamiento: solo locales
+reports/resultados/
+resultados/
+*.pt.tmp
+resultados*.zip
+resultados*.tar.gz

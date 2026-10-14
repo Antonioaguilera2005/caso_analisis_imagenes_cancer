@@ -89,16 +89,19 @@ Cada salida tiene que ser una carpeta nueva: si repites la prueba, usa
 `runs/prueba_gpu_2`. Si falta memoria, reduce `--batch-size`; si fallan los
 trabajadores, conserva `--workers 0`.
 
-## 7. Entrenar el primer experimento real
+## 7. Ejecutar la validación cruzada completa
 
 ```bash
-python entrenar.py --datos breastdcedl --dispositivo cuda --fold 0 --perdida ambas --batch-size 16 --workers 2 --salida runs/fold0_semilla42
+python validacion_cruzada.py --datos breastdcedl --dispositivo cuda --batch-size 16 --workers 2 --salida runs/cv5_v2
 ```
 
-Mantener el equipo encendido y la terminal abierta. Ejecuta primero este fold;
-no lanzar a la vez los cinco folds. El script compara BCE normal y ponderada,
-con máximo 40 épocas y parada después de ocho épocas sin mejora de AUC por
-paciente. Guarda el mejor checkpoint de cada pérdida y no evalúa test.
+Mantener el equipo encendido y la terminal abierta. Ejecuta los cinco folds y
+las dos pérdidas secuencialmente: diez entrenamientos. Cada uno usa máximo
+40 épocas y parada después de ocho épocas sin mejora de AUC por paciente.
+Guarda un checkpoint por época y señala el elegido en `seleccion.json`.
+Registra train/validación juntos y genera gráficas al terminar. No evalúa test.
+Aunque ya se haya realizado el fold 0 antiguo, repetirlo con esta versión para
+registrar las curvas faltantes y conservar todos sus checkpoints.
 Si cambias batch o workers, registra los cambios y usa una carpeta nueva.
 
 ## 8. Traer los resultados al portátil
@@ -106,12 +109,12 @@ Si cambias batch o workers, registra los cambios y usa una carpeta nueva.
 Copiar en un USB o almacenamiento personal:
 
 - `diagnostico_entorno.json`.
-- La carpeta completa `runs/fold0_semilla42`, incluidos los dos `mejor.pt`.
+- La carpeta completa `runs/cv5_v2`, incluidos todos los `checkpoints` y el análisis.
 
 No borrar los resultados del equipo de clase hasta comprobar la copia.
 `runs/` está ignorado por Git: un `git push` no transporta los pesos ni métricas.
 En el portátil, colocar la carpeta en `runs/` del repositorio.
 Revisaremos historial, sensibilidad, especificidad, AUC y matriz de confusión
-antes de decidir ajustes o pasar a los otros folds. No usar test para ajustar.
+antes de decidir ajustes o cerrar el modelo. No usar test para ajustar.
 
 Más detalles: [ENTRENAMIENTO.md](ENTRENAMIENTO.md).

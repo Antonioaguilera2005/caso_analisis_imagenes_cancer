@@ -71,15 +71,28 @@ def loader(filas, raiz, args, entrenamiento):
 
 
 @torch.inference_mode()
-def predecir(modelo, dl, dispositivo):
+def predecir(modelo, dl, dispositivo, devolver_logits=False):
     modelo.eval()
     probabilidades = []
     for x, _ in dl:
-        prob = torch.sigmoid(modelo(x.to(dispositivo))).cpu().numpy()
+        logits = modelo(x.to(dispositivo))
+        prob = (logits if devolver_logits else torch.sigmoid(logits)).cpu().numpy()
         if not np.isfinite(prob).all():
             raise ValueError("Predicciones no finitas")
         probabilidades.append(prob)
     return np.concatenate(probabilidades)
+
+
+def evaluar_epoca(modelo, dl, filas, dispositivo, peso):
+    """Evaluación sin aumentos/dropout: BCE por corte y AUC por paciente."""
+    logits = torch.from_numpy(predecir(modelo, dl, dispositivo, devolver_logits=True))
+    etiquetas = torch.tensor(filas.pCR.to_numpy(), dtype=torch.float32)
+    bce = nn.functional.binary_cross_entropy_with_logits(logits, etiquetas).item()
+    bce_ponderada = nn.functional.binary_cross_entropy_with_logits(
+        logits, etiquetas, pos_weight=torch.tensor(peso)).item()
+    probs = torch.sigmoid(logits).numpy()
+    metricas = uc.evaluar_por_paciente(probs, filas, metodo="mean", umbral=0.5)
+    return dict(bce=bce, bce_objetivo=bce_ponderada, **metricas)
 
 
 def limitar_para_prueba(filas, negativos=2):
@@ -118,6 +131,9 @@ def ejecutar(args, perdida, tr, va, directorio):
     peso = uc.pos_weight(tr) if perdida == "ponderada" else 1.0
     criterio = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(peso, device=dispositivo))
     dl_tr, dl_va = loader(tr, args.datos, args, True), loader(va, args.datos, args, False)
+    dl_tr_eval = loader(tr, args.datos, args, False)
+    checkpoints = directorio / "checkpoints"
+    checkpoints.mkdir()
     config = {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()}
     config.update(perdida=perdida, pos_weight=peso, canales=["PRE", "EARLY", "LATE"],
                   normalizacion="float32 / 255", parametros=sum(p.numel() for p in modelo.parameters()),
@@ -126,6 +142,8 @@ def ejecutar(args, perdida, tr, va, directorio):
                   uso="prueba_tecnica" if args.prueba else "validacion_interna")
     config["sha256_samples"] = hashlib.sha256((args.datos / "metadata/samples.csv").read_bytes()).hexdigest()
     config["sha256_utils"] = hashlib.sha256(Path(uc.__file__).read_bytes()).hexdigest()
+    config["sha256_modelo"] = hashlib.sha256((Path(__file__).resolve().parent / "modelo.py").read_bytes()).hexdigest()
+    config["sha256_entrenar"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     guardar_json(directorio / "config.json", config)
     entorno = dict(python=sys.version, plataforma=platform.platform(), torch=torch.__version__,
                    numpy=np.__version__, pandas=pd.__version__, hip=torch.version.hip,
@@ -138,6 +156,7 @@ def ejecutar(args, perdida, tr, va, directorio):
     tr[["sample_id", "patient_id", "pCR", "fold"]].to_csv(directorio / "particion_train.csv", index=False)
     va[["sample_id", "patient_id", "pCR", "fold"]].to_csv(directorio / "particion_val.csv", index=False)
     mejor, sin_mejora, historial = -math.inf, 0, []
+    checkpoint_elegido = None
     sincronizar(dispositivo)
     inicio_total = time.perf_counter()
     for epoca in range(1, args.epocas + 1):
@@ -155,27 +174,42 @@ def ejecutar(args, perdida, tr, va, directorio):
             optimizador.step()
             acumulada += loss.item() * len(y)
             ejemplos += len(y)
-        probs = predecir(modelo, dl_va, dispositivo)
-        metricas = uc.evaluar_por_paciente(probs, va, metodo="mean", umbral=0.5)
+        evaluacion_train = evaluar_epoca(modelo, dl_tr_eval, tr, dispositivo, peso)
+        evaluacion_val = evaluar_epoca(modelo, dl_va, va, dispositivo, peso)
+        metricas = {k: v for k, v in evaluacion_val.items() if k not in ("bce", "bce_objetivo")}
         if not math.isfinite(metricas["auc"]):
             raise ValueError("AUC de validación no válida")
         sincronizar(dispositivo)
         registro = dict(epoca=epoca, loss_train=acumulada / ejemplos,
+                        loss_train_eval=evaluacion_train["bce"], loss_val=evaluacion_val["bce"],
+                        loss_train_eval_objetivo=evaluacion_train["bce_objetivo"],
+                        loss_val_objetivo=evaluacion_val["bce_objetivo"],
+                        auc_train=evaluacion_train["auc"], auc_val=metricas["auc"],
                         segundos=time.perf_counter() - inicio, **metricas)
         historial.append(registro)
         guardar_json(directorio / "historial.json", historial)
         print(f"{perdida} | época {epoca}: loss={registro['loss_train']:.4f}, "
               f"AUC paciente={metricas['auc']:.4f}, tiempo={registro['segundos']:.1f}s", flush=True)
+        ruta_checkpoint = checkpoints / f"epoca_{epoca:03d}.pt"
+        temporal = ruta_checkpoint.with_suffix(".pt.tmp")
+        torch.save({"state_dict": modelo.state_dict(), "optimizer_state_dict": optimizador.state_dict(),
+                    "config": config, "epoca": epoca, "auc_val": metricas["auc"],
+                    "metricas_train": evaluacion_train, "metricas_val": evaluacion_val}, temporal)
+        temporal.replace(ruta_checkpoint)
         if metricas["auc"] > mejor:
             mejor, sin_mejora = metricas["auc"], 0
-            torch.save({"state_dict": modelo.state_dict(), "config": config, "epoca": epoca,
-                        "auc_val": mejor}, directorio / "mejor.pt")
+            checkpoint_elegido = ruta_checkpoint
+            guardar_json(directorio / "seleccion.json", {
+                "checkpoint": str(ruta_checkpoint.relative_to(directorio)).replace("\\", "/"),
+                "epoca": epoca, "auc_val": mejor,
+                "criterio": "Máxima AUC por paciente con media de cortes; primer máximo en empates",
+            })
         else:
             sin_mejora += 1
         if sin_mejora >= args.paciencia:
             break
     duracion = time.perf_counter() - inicio_total
-    checkpoint = torch.load(directorio / "mejor.pt", map_location=dispositivo, weights_only=True)
+    checkpoint = torch.load(checkpoint_elegido, map_location=dispositivo, weights_only=True)
     modelo.load_state_dict(checkpoint["state_dict"])
     probs = predecir(modelo, dl_va, dispositivo)
     predicciones = va[["sample_id", "patient_id", "pCR"]].copy()
@@ -193,7 +227,8 @@ def ejecutar(args, perdida, tr, va, directorio):
     guardar_json(directorio / "ejecucion.json", {
         "epoca_elegida": checkpoint["epoca"], "segundos_entrenamiento_y_validacion": duracion,
         "memoria_gpu_max_bytes": torch.cuda.max_memory_allocated(dispositivo) if dispositivo.type == "cuda" else None,
-        "sha256_checkpoint": hashlib.sha256((directorio / "mejor.pt").read_bytes()).hexdigest(),
+        "checkpoint_elegido": str(checkpoint_elegido.relative_to(directorio)).replace("\\", "/"),
+        "sha256_checkpoint": hashlib.sha256(checkpoint_elegido.read_bytes()).hexdigest(),
         "advertencia": "Prueba técnica sin valor predictivo" if args.prueba else "Resultados de validación interna; test no evaluado",
     })
     return dict(perdida=perdida, epoca=checkpoint["epoca"], **resultados["mean"])

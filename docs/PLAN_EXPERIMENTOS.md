@@ -30,14 +30,15 @@ AUC de validación por paciente. Guardar el mejor checkpoint según ese criterio
 Comparar BCE normal y BCE ponderada con la misma arquitectura, fold, semilla,
 presupuesto y aumentos. Calcular pos_weight exclusivamente con entrenamiento
 de cada fold, siguiendo utils_caso.py. Registrar la fórmula y los recuentos.
-Comenzar con fold 0; repetir la comparación en los cinco folds si el tiempo permite.
+El fold 0 sirve como primera ejecución. Completar la comparación en los cinco
+folds para informar media y desviación estándar entre folds.
 La prueba con cinco pacientes solo verifica funcionamiento, no calidad del modelo.
 
 ## Validación y cierre
 
 Generar probabilidades de corte sin shuffle y conservar sample_id y patient_id.
-Agregar por paciente con media como referencia. Comparar mediana y máximo con
-validación interna. Usar umbral 0.5 como referencia y justificar cualquier ajuste
+Agregar por paciente con media, siguiendo la aclaración del profesor. Mediana y
+máximo quedan como exploraciones secundarias. Usar umbral 0.5 como referencia y justificar cualquier ajuste
 usando exclusivamente validación. Registrar accuracy, sensibilidad, especificidad,
 ROC-AUC y matriz de confusión; comparar con predecir siempre pCR=0.
 Las métricas usadas para seleccionar modelos son internas y pueden ser optimistas.
