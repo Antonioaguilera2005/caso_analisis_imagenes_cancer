@@ -87,6 +87,12 @@ los archivos conservados antes de cualquier recuperación; no borrar ese registr
 para probar configuraciones. Los resultados guardados se consultan sin repetir
 inferencia. Este mecanismo no sustituye la disciplina metodológica.
 
+Antes de test se puede ejecutar `auditar_modelo_final.py` para verificar pesos,
+pasos de Adam y métricas de train. Después, `resumir_evaluacion.py` contrasta los
+CSV guardados y genera los gráficos e informe sin repetir inferencia. Consultar
+[AUDITORIA_FINAL.md](AUDITORIA_FINAL.md). La figura separa CV con mejores épocas
+por fold de CV en la misma época fija: sus AUC no son intercambiables.
+
 ## Inferencia compartida con la futura aplicación
 
 `finalizar.cargar_modelo_final` verifica el checksum, valida la receta, carga

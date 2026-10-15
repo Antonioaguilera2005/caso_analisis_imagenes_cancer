@@ -205,11 +205,11 @@ def umbrales(tabla, nombre, destino):
     return mejor
 
 
-def casos_fallados(tabla, nombre, samples, raiz, destino):
-    fallos = tabla.assign(pred=(tabla.prob >= 0.5).astype(int))
+def casos_fallados(tabla, nombre, samples, raiz, destino, umbral=0.5):
+    fallos = tabla.assign(pred=(tabla.prob >= umbral).astype(int))
     fallos = fallos[fallos.pCR != fallos.pred].copy()
     fallos["tipo"] = np.where(fallos.pred == 1, "FP", "FN")
-    fallos["distancia_umbral"] = abs(fallos.prob - 0.5)
+    fallos["distancia_umbral"] = abs(fallos.prob - umbral)
     fallos.sort_values("distancia_umbral", ascending=False).to_csv(destino / f"fallos_{nombre}.csv", index=False)
     seleccion = fallos.sort_values("distancia_umbral", ascending=False).groupby("tipo").head(2)
     if seleccion.empty:
@@ -229,7 +229,7 @@ def casos_fallados(tabla, nombre, samples, raiz, destino):
         ejes[3].set_title("EARLY − PRE")
         ejes[3].axis("off")
         ejes[0].set_title(f"{paciente.patient_id} · {paciente.tipo}\nreal={paciente.pCR}, prob={paciente.prob:.3f} · PRE", fontsize=9)
-    fig.suptitle(f"Errores {nombre}, t=0.5 · un corte representativo, predicción con todos los cortes")
+    fig.suptitle(f"Errores {nombre}, t={umbral:.2f} · un corte representativo, predicción con todos los cortes")
     guardar_figura(fig, destino / f"casos_fallados_{nombre}.png")
 
 

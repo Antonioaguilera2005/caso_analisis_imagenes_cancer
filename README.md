@@ -95,6 +95,8 @@ conservan localmente en `runs/` y se transportan fuera de GitHub.
 Tras completar CV, seguir [la guía del modelo final](docs/MODELO_FINAL.md):
 `finalizar.py preparar` cierra la receta, `entrenar` reentrena una única CNN con
 todo train y `evaluar` realiza la evaluación única de test con umbral fijo.
+La [guía de auditoría](docs/AUDITORIA_FINAL.md) explica cómo contrastar pesos,
+historial y métricas, y generar informes desde las predicciones guardadas.
 
 1. Revisar el enunciado y explorar imágenes y metadatos.
 2. Validar etiquetas y separación por paciente con los folds dados.

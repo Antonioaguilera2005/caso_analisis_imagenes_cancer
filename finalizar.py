@@ -213,15 +213,19 @@ def entrenar_final(args):
                         pacientes_train=tr.patient_id.nunique(), state_dict=modelo.state_dict(),
                         optimizer_state_dict=optimizador.state_dict()), temporal)
         temporal.replace(checkpoint)
-        informar(f"epoch={epoca:03d} train_loss={acumulada/n:.4f} train_eval_loss={evaluacion['bce']:.4f} train_roc_auc={evaluacion['auc']:.4f} train_pr_auc={evaluacion['pr_auc']:.4f} train_AP={evaluacion['average_precision']:.4f} train_f1_macro={evaluacion['f1_macro']:.4f} lr={r['lr']:g} time={historial[-1]['segundos']:.1f}s checkpoint={checkpoint.name}")
+        informar(f"epoch={epoca:03d} train_loss={acumulada/n:.4f} train_eval_loss={evaluacion['bce']:.4f} train_roc_auc={evaluacion['auc']:.4f} train_pr_auc={evaluacion['pr_auc']:.4f} train_AP={evaluacion['average_precision']:.4f} train_f1_macro_t05={evaluacion['f1_macro']:.4f} lr={r['lr']:g} time={historial[-1]['segundos']:.1f}s checkpoint={checkpoint.name}")
     guardar_json(args.salida / "artefacto.json", dict(checkpoint=str(checkpoint.relative_to(args.salida)).replace("\\", "/"),
                  sha256_checkpoint=sha(checkpoint), prueba=args.prueba, epocas=epocas, umbral=r["umbral"],
                  segundos=time.perf_counter()-total,
                  memoria_gpu_max_bytes=torch.cuda.max_memory_allocated(dispositivo) if dispositivo.type == "cuda" else None))
-    fig, ax = plt.subplots(figsize=(7, 4))
-    ax.plot(range(1, epocas+1), [h["bce"] for h in historial], "o-", label="BCE train, sin aumentos")
-    ax.set(xlabel="Época", ylabel="BCE", title="Reentrenamiento final · sin selección por test ni validación")
-    ax.legend()
+    fig, ejes = plt.subplots(1, 2, figsize=(11, 4))
+    for ax in ejes:
+        ax.plot(range(1, epocas+1), [h["bce"] for h in historial], "o-", label="BCE train, sin aumentos")
+        ax.set(xlabel="Época", ylabel="BCE", xticks=range(1,epocas+1))
+        ax.legend()
+    ejes[0].set(title="Escala con contexto", ylim=(0,max(0.8,max(h["bce"] for h in historial)*1.1)))
+    ejes[1].set_title("Detalle de la misma curva")
+    fig.suptitle("Reentrenamiento final · solo train, sin selección por test")
     guardar_figura(fig, args.salida / "curva_train_final.png")
     informar(f"Finalizado. Última época fijada por CV: {checkpoint}. Llevar la carpeta completa al portátil.")
 
@@ -251,6 +255,8 @@ def cargar_modelo_final(carpeta, dispositivo="cpu"):
 
 
 def evaluar_test(args):
+    if args.dispositivo == "cpu":
+        torch.set_num_threads(getattr(args,"threads_cpu",2))
     modelo, r, a = cargar_modelo_final(args.modelo, args.dispositivo)
     if sha(args.datos / "metadata/samples.csv") != r["sha256_samples"]:
         raise ValueError("Índice de datos diferente del cierre")
@@ -267,7 +273,11 @@ def evaluar_test(args):
         json.dump(dict(estado="iniciada", sha256_checkpoint=a["sha256_checkpoint"], umbral=r["umbral"], salida=str(args.salida.resolve())), archivo, indent=2)
     dispositivo = torch.device(args.dispositivo)
     dl_args = SimpleNamespace(batch_size=r["batch_size"], workers=0, semilla=r["semilla"], dispositivo=args.dispositivo)
+    sincronizar(dispositivo)
+    inicio_inferencia = time.perf_counter()
     probs = predecir(modelo, loader(test, args.datos, dl_args, False), dispositivo)
+    sincronizar(dispositivo)
+    segundos_inferencia = time.perf_counter()-inicio_inferencia
     cortes = test[["sample_id", "patient_id", "pCR"]].copy()
     cortes["prob"] = probs
     cortes.to_csv(args.salida / "predicciones_cortes.csv", index=False)
@@ -281,6 +291,9 @@ def evaluar_test(args):
     m["baseline_siempre_no_pcr"] = metricas(tabla.pCR, np.zeros(len(tabla)), 0.5)
     m["average_precision"] = float(average_precision_score(tabla.pCR, tabla.prob))
     m["sha256_checkpoint"] = a["sha256_checkpoint"]
+    m["segundos_inferencia_con_carga"] = segundos_inferencia
+    m["entorno_inferencia"] = dict(torch=str(torch.__version__), dispositivo=args.dispositivo,
+                                   threads_cpu=torch.get_num_threads(), python=platform.python_version())
     guardar_json(args.salida / "metricas_test.json", m)
     por_cohorte = {}
     for cohorte, g in tabla.groupby("dataset"):
@@ -336,10 +349,13 @@ def main():
     test.add_argument("--datos", type=Path, default=Path("breastdcedl"))
     test.add_argument("--salida", type=Path, default=Path("runs/test_final"))
     test.add_argument("--dispositivo", choices=["cpu", "cuda"], default="cpu")
+    test.add_argument("--threads-cpu", type=int, default=2)
     test.set_defaults(func=evaluar_test)
     args = p.parse_args()
     if getattr(args, "workers", 0) < 0:
         p.error("workers debe ser no negativo")
+    if getattr(args,"threads_cpu",2) < 1:
+        p.error("threads-cpu debe ser positivo")
     try:
         args.func(args)
     except (OSError, ValueError) as exc:
