@@ -92,6 +92,10 @@ genera PNG con `analizar_resultados.py`. Se guarda un checkpoint por época y
 se señala el elegido en `seleccion.json`. Los resultados y sus gráficas se
 conservan localmente en `runs/` y se transportan fuera de GitHub.
 
+Tras completar CV, seguir [la guía del modelo final](docs/MODELO_FINAL.md):
+`finalizar.py preparar` cierra la receta, `entrenar` reentrena una única CNN con
+todo train y `evaluar` realiza la evaluación única de test con umbral fijo.
+
 1. Revisar el enunciado y explorar imágenes y metadatos.
 2. Validar etiquetas y separación por paciente con los folds dados.
 3. Implementar una CNN propia desde cero, con un logit de salida.

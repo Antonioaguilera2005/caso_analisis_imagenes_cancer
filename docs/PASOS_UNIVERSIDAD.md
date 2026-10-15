@@ -118,3 +118,11 @@ Revisaremos historial, sensibilidad, especificidad, AUC y matriz de confusión
 antes de decidir ajustes o cerrar el modelo. No usar test para ajustar.
 
 Más detalles: [ENTRENAMIENTO.md](ENTRENAMIENTO.md).
+
+## 9. Después de revisar la CV en el portátil
+
+Si se decide reentrenar una única CNN con todo train, seguir
+[MODELO_FINAL.md](MODELO_FINAL.md). Primero se cierra la receta con CV,
+después se reentrena en la GPU con épocas fijas y se trae la carpeta completa
+`runs/modelo_final`. Test se evalúa una sola vez después de esa etapa, sin
+modificar el modelo ni el umbral a partir de su resultado.

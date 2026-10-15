@@ -232,3 +232,4 @@ resultados/
 *.pt.tmp
 resultados*.zip
 resultados*.tar.gz
+/cv5_v2/
