@@ -8,6 +8,7 @@ from pathlib import Path
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--datos", type=Path, default=Path("breastdcedl"))
+    p.add_argument("--clinica", action="store_true", help="Añadir edad y menopausia; ajuste solo en train de cada fold")
     p.add_argument("--salida", type=Path, required=True)
     p.add_argument("--dispositivo", choices=("cpu", "cuda"), default="cuda")
     p.add_argument("--folds", type=int, nargs="+", choices=range(5), default=list(range(5)))
@@ -39,6 +40,8 @@ def main():
                    "--lr", str(args.lr), "--dropout", str(args.dropout), "--weight-decay", str(args.weight_decay)]
         if args.prueba:
             comando.append("--prueba")
+        if args.clinica:
+            comando.append("--clinica")
         print(f"Iniciando fold {fold}; las dos pérdidas se entrenan secuencialmente", flush=True)
         subprocess.run(comando, check=True)
     if not args.prueba:

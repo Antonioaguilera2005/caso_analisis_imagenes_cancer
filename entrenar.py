@@ -65,10 +65,19 @@ def sincronizar(dispositivo):
 def loader(filas, raiz, args, entrenamiento):
     dataset = uc.BreastDCEDataset(filas, raiz,
                                 transform=aumento_geometrico if entrenamiento else None)
+    if getattr(args, "clinica", False):
+        from clinica import DatasetClinico
+        pacientes = uc.cargar_patients(raiz)
+        pacientes = pacientes[pacientes.split == "train"]
+        dataset = DatasetClinico(dataset, pacientes, args.preprocesado_clinico)
     generador = torch.Generator().manual_seed(args.semilla)
     return DataLoader(dataset, batch_size=args.batch_size, shuffle=entrenamiento,
                       num_workers=args.workers, pin_memory=args.dispositivo == "cuda",
                       worker_init_fn=semilla_worker, generator=generador)
+
+
+def mover_entrada(x, dispositivo):
+    return tuple(v.to(dispositivo) for v in x) if isinstance(x, (tuple, list)) else x.to(dispositivo)
 
 
 @torch.inference_mode()
@@ -76,7 +85,7 @@ def predecir(modelo, dl, dispositivo, devolver_logits=False):
     modelo.eval()
     probabilidades = []
     for x, _ in dl:
-        logits = modelo(x.to(dispositivo))
+        logits = modelo(mover_entrada(x, dispositivo))
         prob = (logits if devolver_logits else torch.sigmoid(logits)).cpu().numpy()
         if not np.isfinite(prob).all():
             raise ValueError("Predicciones no finitas")
@@ -136,7 +145,17 @@ def ejecutar(args, perdida, tr, va, directorio):
     fijar_semilla(args.semilla)
     dispositivo = torch.device(args.dispositivo)
     directorio.mkdir(parents=True, exist_ok=False)
-    modelo = CNNBreastDCE(args.dropout).to(dispositivo)
+    if getattr(args, "clinica", False):
+        from clinica import CNNConClinica, ajustar_clinica
+        pacientes = uc.cargar_patients(args.datos)
+        ajuste = pacientes[(pacientes.split == "train") & pacientes.pid.isin(tr.patient_id.unique())]
+        if set(ajuste.pid) != set(tr.patient_id):
+            raise ValueError("Faltan pacientes para ajustar clínica")
+        args.preprocesado_clinico = ajustar_clinica(ajuste)
+        modelo = CNNConClinica(args.dropout).to(dispositivo)
+        guardar_json(directorio / "preprocesado_clinico.json", args.preprocesado_clinico)
+    else:
+        modelo = CNNBreastDCE(args.dropout).to(dispositivo)
     optimizador = torch.optim.Adam(modelo.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     peso = uc.pos_weight(tr) if perdida == "ponderada" else 1.0
     criterio = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(peso, device=dispositivo))
@@ -154,6 +173,9 @@ def ejecutar(args, perdida, tr, va, directorio):
     config["sha256_utils"] = hashlib.sha256(Path(uc.__file__).read_bytes()).hexdigest()
     config["sha256_modelo"] = hashlib.sha256((Path(__file__).resolve().parent / "modelo.py").read_bytes()).hexdigest()
     config["sha256_entrenar"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    if getattr(args, "clinica", False):
+        config["sha256_clinica"] = hashlib.sha256(Path(__file__).with_name("clinica.py").read_bytes()).hexdigest()
+        config["sha256_patients"] = hashlib.sha256((args.datos / "metadata/patients.csv").read_bytes()).hexdigest()
     guardar_json(directorio / "config.json", config)
     entorno = dict(python=sys.version, plataforma=platform.platform(), torch=torch.__version__,
                    numpy=np.__version__, pandas=pd.__version__, hip=torch.version.hip,
@@ -173,7 +195,8 @@ def ejecutar(args, perdida, tr, va, directorio):
     informar(f"{perdida} | fold={args.fold} | dispositivo={dispositivo} "
              f"| gpu={entorno.get('gpu', 'no utilizada')} | parametros={config['parametros']} "
              f"| pacientes train/val={config['pacientes_train']}/{config['pacientes_val']}")
-    informar(f"entrada=solo imagenes PRE/EARLY/LATE | perdida={perdida} | pos_weight={peso:.4f} "
+    entrada = "imagenes + edad + menopausia" if getattr(args, "clinica", False) else "solo imagenes PRE/EARLY/LATE"
+    informar(f"entrada={entrada} | perdida={perdida} | pos_weight={peso:.4f} "
              f"| batch={args.batch_size} | lr={args.lr:g} | semilla={args.semilla} "
              f"| agregacion=mean | umbral_referencia=0.5")
     if args.prueba:
@@ -190,7 +213,7 @@ def ejecutar(args, perdida, tr, va, directorio):
         modelo.train()
         acumulada, ejemplos = 0.0, 0
         for x, y in dl_tr:
-            x, y = x.to(dispositivo), y.to(dispositivo)
+            x, y = mover_entrada(x, dispositivo), y.to(dispositivo)
             optimizador.zero_grad(set_to_none=True)
             loss = criterio(modelo(x), y)
             if not torch.isfinite(loss):
@@ -276,6 +299,7 @@ def ejecutar(args, perdida, tr, va, directorio):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--datos", type=Path, default=Path("breastdcedl"))
+    p.add_argument("--clinica", action="store_true", help="Comparación adicional: imágenes + edad y menopausia")
     p.add_argument("--salida", type=Path, required=True, help="Carpeta nueva: nunca sobrescribe experimentos")
     p.add_argument("--fold", type=int, choices=range(5), default=0)
     p.add_argument("--perdida", choices=("normal", "ponderada", "ambas"), default="ambas")

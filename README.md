@@ -6,8 +6,11 @@ la predicción final se obtiene por paciente.
 
 ## Estado y documentación
 
-Exploración y pipeline de entrenamiento implementados. No hay entrenamiento
-completo ni métricas finales todavía. Las pruebas técnicas usan pocos pacientes.
+Pipeline de entrenamiento y análisis implementado; hay validación cruzada y una
+primera evaluación final archivadas localmente en `runs/`. Los resultados y pesos
+no se publican en Git. La comparación adicional con edad y menopausia está
+preparada: [instrucciones del experimento clínico](docs/EXPERIMENTO_CLINICO.md).
+Las pruebas técnicas usan pocos pacientes y no estiman rendimiento predictivo.
 Consultar [la guía](docs/GUIA.md) y el
 [enunciado oficial](docs/caso_breastdcedl.pdf), revisado durante la preparación.
 

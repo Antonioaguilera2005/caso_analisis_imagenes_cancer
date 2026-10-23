@@ -72,6 +72,8 @@ def preparar(args):
     pacientes = pacientes[pacientes.split == "train"]
     ejecuciones = [cargar_ejecucion(args.cv / f"fold{f}_semilla42" / perdida, samples, pacientes)
                    for f in range(5) for perdida in ("normal", "ponderada")]
+    if any(e["config"].get("clinica") for e in ejecuciones):
+        raise ValueError("La comparación clínica no es compatible con el cierre de la CNN solo imagen. No evaluar test.")
     if not all(e["checkpoint_presente"] for e in ejecuciones):
         raise ValueError("Faltan pesos de la validación cruzada")
     campos = ("lr", "dropout", "weight_decay", "batch_size", "semilla", "parametros", "sha256_modelo", "sha256_samples")

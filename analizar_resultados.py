@@ -68,6 +68,12 @@ def cargar_ejecucion(directorio, samples, pacientes):
     if fold not in range(5):
         raise ValueError("Fold inválido")
     tr, va = uc.particion(samples, fold)
+    if config.get("clinica"):
+        from clinica import ajustar_clinica
+        estado = leer_json(directorio / "preprocesado_clinico.json")
+        ajuste = pacientes[pacientes.pid.isin(tr.patient_id.unique())]
+        if estado != ajustar_clinica(ajuste) or config.get("preprocesado_clinico") != estado:
+            raise ValueError("Preprocesado clínico no coincide con pacientes train del fold")
     for nombre, esperado in (("train", tr), ("val", va)):
         particion = pd.read_csv(directorio / f"particion_{nombre}.csv")
         if particion.sample_id.duplicated().any() or set(particion.sample_id) != set(esperado.sample_id):
@@ -262,7 +268,7 @@ def main():
             ejecuciones.append(ejecucion)
     if not ejecuciones:
         p.error("No hay experimentos completos")
-    campos_receta = ("semilla", "lr", "dropout", "weight_decay", "batch_size", "epocas", "paciencia", "parametros", "sha256_modelo")
+    campos_receta = ("semilla", "lr", "dropout", "weight_decay", "batch_size", "epocas", "paciencia", "parametros", "sha256_modelo", "clinica", "sha256_clinica", "sha256_patients")
     recetas = {tuple(e["config"].get(c) for c in campos_receta) for e in ejecuciones}
     if len(recetas) != 1:
         p.error("Las ejecuciones tienen recetas o arquitecturas distintas; analizarlas por separado")
@@ -345,8 +351,8 @@ def main():
                   "Los intervalos describen incertidumbre de pacientes para modelos ya elegidos; no incluyen la selección de época ni variabilidad del entrenamiento.",
                   "El umbral exploratorio optimiza F1 macro en la misma validación y no aporta una evaluación independiente.",
                   "F1 macro es la media del F1 de ambas clases. No hay un F1 clínicamente óptimo universal.",
-                  "Los historiales antiguos no permiten reconstruir pérdidas de validación o AUC train por época.",
-                  "No deducir sobreajuste demostrado sin las curvas comparables que faltan; una AUC val que cae mientras baja train loss es una señal para investigar.",
+                  "Las ejecuciones recientes incluyen pérdidas y AUC train/validación por época; algunos historiales antiguos carecen de ellas.",
+                  "Valorar el sobreajuste por la separación persistente entre train y validación, no solo por los picos.",
                   "Resultados y figuras locales: mantener fuera de Git."])
     (args.salida / "INFORME.md").write_text("\n".join(notas) + "\n", encoding="utf-8")
     print(f"Análisis y PNG generados en {args.salida}")
