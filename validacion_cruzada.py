@@ -9,6 +9,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--datos", type=Path, default=Path("breastdcedl"))
     p.add_argument("--clinica", action="store_true", help="Añadir edad y menopausia; ajuste solo en train de cada fold")
+    p.add_argument("--arquitectura", choices=("simple", "doble"), default="simple")
     p.add_argument("--salida", type=Path, required=True)
     p.add_argument("--dispositivo", choices=("cpu", "cuda"), default="cuda")
     p.add_argument("--folds", type=int, nargs="+", choices=range(5), default=list(range(5)))
@@ -22,6 +23,8 @@ def main():
     p.add_argument("--weight-decay", type=float, default=0.0001)
     p.add_argument("--prueba", action="store_true", help="Prueba técnica pequeña; no analiza como CV científica")
     args = p.parse_args()
+    if args.clinica and args.arquitectura != "simple":
+        p.error("No combinar cambio de arquitectura y clínica en este experimento")
     if len(set(args.folds)) != len(args.folds):
         p.error("No repetir folds")
     if args.salida.exists():
@@ -37,7 +40,8 @@ def main():
                    "--dispositivo", args.dispositivo, "--epocas", str(args.epocas),
                    "--paciencia", str(args.paciencia), "--batch-size", str(args.batch_size),
                    "--workers", str(args.workers), "--semilla", str(args.semilla),
-                   "--lr", str(args.lr), "--dropout", str(args.dropout), "--weight-decay", str(args.weight_decay)]
+                   "--lr", str(args.lr), "--dropout", str(args.dropout), "--weight-decay", str(args.weight_decay),
+                   "--arquitectura", args.arquitectura]
         if args.prueba:
             comando.append("--prueba")
         if args.clinica:

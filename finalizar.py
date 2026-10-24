@@ -74,6 +74,8 @@ def preparar(args):
                    for f in range(5) for perdida in ("normal", "ponderada")]
     if any(e["config"].get("clinica") for e in ejecuciones):
         raise ValueError("La comparación clínica no es compatible con el cierre de la CNN solo imagen. No evaluar test.")
+    if any(e["config"].get("arquitectura", "simple") != "simple" for e in ejecuciones):
+        raise ValueError("El cierre histórico solo admite la CNN simple; comparar la nueva arquitectura en validación, sin test.")
     if not all(e["checkpoint_presente"] for e in ejecuciones):
         raise ValueError("Faltan pesos de la validación cruzada")
     campos = ("lr", "dropout", "weight_decay", "batch_size", "semilla", "parametros", "sha256_modelo", "sha256_samples")

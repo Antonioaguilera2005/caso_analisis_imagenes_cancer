@@ -10,6 +10,8 @@ Pipeline de entrenamiento y análisis implementado; hay validación cruzada y un
 primera evaluación final archivadas localmente en `runs/`. Los resultados y pesos
 no se publican en Git. La comparación adicional con edad y menopausia está
 preparada: [instrucciones del experimento clínico](docs/EXPERIMENTO_CLINICO.md).
+La siguiente comparación usa solo imágenes y
+[doble convolución por bloque](docs/EXPERIMENTO_DOBLE_CONVOLUCION.md).
 Las pruebas técnicas usan pocos pacientes y no estiman rendimiento predictivo.
 Consultar [la guía](docs/GUIA.md) y el
 [enunciado oficial](docs/caso_breastdcedl.pdf), revisado durante la preparación.

@@ -154,6 +154,9 @@ def ejecutar(args, perdida, tr, va, directorio):
         args.preprocesado_clinico = ajustar_clinica(ajuste)
         modelo = CNNConClinica(args.dropout).to(dispositivo)
         guardar_json(directorio / "preprocesado_clinico.json", args.preprocesado_clinico)
+    elif getattr(args, "arquitectura", "simple") == "doble":
+        from modelo_doble import CNNBreastDCEDoble
+        modelo = CNNBreastDCEDoble(args.dropout).to(dispositivo)
     else:
         modelo = CNNBreastDCE(args.dropout).to(dispositivo)
     optimizador = torch.optim.Adam(modelo.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -173,6 +176,8 @@ def ejecutar(args, perdida, tr, va, directorio):
     config["sha256_utils"] = hashlib.sha256(Path(uc.__file__).read_bytes()).hexdigest()
     config["sha256_modelo"] = hashlib.sha256((Path(__file__).resolve().parent / "modelo.py").read_bytes()).hexdigest()
     config["sha256_entrenar"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    if getattr(args, "arquitectura", "simple") == "doble":
+        config["sha256_modelo_doble"] = hashlib.sha256(Path(__file__).with_name("modelo_doble.py").read_bytes()).hexdigest()
     if getattr(args, "clinica", False):
         config["sha256_clinica"] = hashlib.sha256(Path(__file__).with_name("clinica.py").read_bytes()).hexdigest()
         config["sha256_patients"] = hashlib.sha256((args.datos / "metadata/patients.csv").read_bytes()).hexdigest()
@@ -196,7 +201,7 @@ def ejecutar(args, perdida, tr, va, directorio):
              f"| gpu={entorno.get('gpu', 'no utilizada')} | parametros={config['parametros']} "
              f"| pacientes train/val={config['pacientes_train']}/{config['pacientes_val']}")
     entrada = "imagenes + edad + menopausia" if getattr(args, "clinica", False) else "solo imagenes PRE/EARLY/LATE"
-    informar(f"entrada={entrada} | perdida={perdida} | pos_weight={peso:.4f} "
+    informar(f"entrada={entrada} | arquitectura={getattr(args, 'arquitectura', 'simple')} | perdida={perdida} | pos_weight={peso:.4f} "
              f"| batch={args.batch_size} | lr={args.lr:g} | semilla={args.semilla} "
              f"| agregacion=mean | umbral_referencia=0.5")
     if args.prueba:
@@ -300,6 +305,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--datos", type=Path, default=Path("breastdcedl"))
     p.add_argument("--clinica", action="store_true", help="Comparación adicional: imágenes + edad y menopausia")
+    p.add_argument("--arquitectura", choices=("simple", "doble"), default="simple")
     p.add_argument("--salida", type=Path, required=True, help="Carpeta nueva: nunca sobrescribe experimentos")
     p.add_argument("--fold", type=int, choices=range(5), default=0)
     p.add_argument("--perdida", choices=("normal", "ponderada", "ambas"), default="ambas")
@@ -314,6 +320,8 @@ def main():
     p.add_argument("--dropout", type=float, default=0.3)
     p.add_argument("--prueba", action="store_true", help="Cinco pacientes train y cuatro validación; solo prueba técnica")
     args = p.parse_args()
+    if args.clinica and args.arquitectura != "simple":
+        p.error("Separar los experimentos: doble convolución solo imagen; clínica con arquitectura simple")
     if min(args.epocas, args.paciencia, args.batch_size) < 1 or args.workers < 0 or args.lr <= 0 or args.weight_decay < 0 or not 0 <= args.dropout < 1 or not all(math.isfinite(v) for v in (args.lr, args.weight_decay, args.dropout)):
         p.error("Parámetros numéricos fuera de rango")
     if args.dispositivo == "cuda" and not torch.cuda.is_available():

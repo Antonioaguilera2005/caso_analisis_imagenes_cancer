@@ -268,7 +268,7 @@ def main():
             ejecuciones.append(ejecucion)
     if not ejecuciones:
         p.error("No hay experimentos completos")
-    campos_receta = ("semilla", "lr", "dropout", "weight_decay", "batch_size", "epocas", "paciencia", "parametros", "sha256_modelo", "clinica", "sha256_clinica", "sha256_patients")
+    campos_receta = ("semilla", "lr", "dropout", "weight_decay", "batch_size", "epocas", "paciencia", "parametros", "sha256_modelo", "clinica", "sha256_clinica", "sha256_patients", "arquitectura", "sha256_modelo_doble")
     recetas = {tuple(e["config"].get(c) for c in campos_receta) for e in ejecuciones}
     if len(recetas) != 1:
         p.error("Las ejecuciones tienen recetas o arquitecturas distintas; analizarlas por separado")
