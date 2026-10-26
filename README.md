@@ -12,6 +12,7 @@ no se publican en Git. La comparación adicional con edad y menopausia está
 preparada: [instrucciones del experimento clínico](docs/EXPERIMENTO_CLINICO.md).
 La siguiente comparación usa solo imágenes y
 [doble convolución por bloque](docs/EXPERIMENTO_DOBLE_CONVOLUCION.md).
+También está preparada la [comparación con tasa de aprendizaje menor](docs/EXPERIMENTO_LR_BAJA.md).
 Las pruebas técnicas usan pocos pacientes y no estiman rendimiento predictivo.
 Consultar [la guía](docs/GUIA.md) y el
 [enunciado oficial](docs/caso_breastdcedl.pdf), revisado durante la preparación.
