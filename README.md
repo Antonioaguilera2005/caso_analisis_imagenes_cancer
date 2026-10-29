@@ -6,6 +6,12 @@ la predicción final se obtiene por paciente.
 
 ## Estado y documentación
 
+Dashboard HTML/CSS/JavaScript + FastAPI implementado y probado localmente con el
+modelo definitivo. [Abrir y desplegar en Render](docs/DASHBOARD_RENDER.md).
+La URL pública está pendiente de creación y verificación en Render.
+[Auditoría del enunciado y salvedades](docs/AUDITORIA_ENUNCIADO.md), incluida
+la exploración de variantes posterior al test original.
+
 Pipeline de entrenamiento y análisis implementado; hay validación cruzada y una
 primera evaluación final archivadas localmente en `runs/`. Los resultados y pesos
 no se publican en Git. La comparación adicional con edad y menopausia está
@@ -14,6 +20,16 @@ La siguiente comparación usa solo imágenes y
 [doble convolución por bloque](docs/EXPERIMENTO_DOBLE_CONVOLUCION.md).
 También está preparada la [comparación con tasa de aprendizaje menor](docs/EXPERIMENTO_LR_BAJA.md).
 Las pruebas técnicas usan pocos pacientes y no estiman rendimiento predictivo.
+
+Para abrir el dashboard en este portátil, con el paquete local preparado:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn webapp.main:app --host 127.0.0.1 --port 8000 --workers 1 --no-access-log
+```
+
+Abrir `http://127.0.0.1:8000`. Los pesos, ejemplos y resultados del dashboard se
+distribuyen en un paquete separado dentro de `artifacts/`, fuera de Git.
+
 Consultar [la guía](docs/GUIA.md) y el
 [enunciado oficial](docs/caso_breastdcedl.pdf), revisado durante la preparación.
 

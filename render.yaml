@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: breastdce-antonio
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: MODEL_BUNDLE_URL
+        sync: false
+      - key: MODEL_BUNDLE_SHA256
+        sync: false

@@ -1,0 +1,7 @@
+*
+!Dockerfile
+!requirements-web.txt
+!modelo.py
+!webapp/
+!webapp/**
+**/__pycache__/
