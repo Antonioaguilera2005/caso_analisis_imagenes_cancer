@@ -32,6 +32,8 @@ El paquete es serialización PyTorch de origen propio; nunca se acepta un modelo
 
 ## Render, paso a paso
 
+Para seguir la pantalla de creación de servicio sin tecnicismos, usar [RENDER_PASOS_FACILES.md](RENDER_PASOS_FACILES.md). La carpeta local `PARA_RENDER` contiene una copia del ZIP con un nombre fácil de localizar y el checksum listo para copiar; está excluida de Git.
+
 No hay una URL pública creada todavía. Se necesita acceso a la cuenta Render y alojar el ZIP fuera de Git.
 
 1. Subir `artifacts/dashboard_bundle.zip` a un almacenamiento que entregue el archivo por URL HTTPS directa. Conservar la huella de `artifacts/dashboard_bundle.sha256`.

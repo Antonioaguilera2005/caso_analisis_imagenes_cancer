@@ -29,6 +29,8 @@ def main():
             page.screenshot(path=str(SALIDA/f'dashboard_{section}.png'),full_page=True)
         page.locator('#zoom-loss').is_visible() # presente aunque se encuentre en otra sección
         page.locator('nav a[data-view="entrenamiento"]').click()
+        assert page.locator('.hypothesis-card').count()==4
+        assert 'Por qué elegimos' in page.locator('.selection-reason').inner_text()
         page.locator('#fold-select').select_option('3')
         page.locator('#zoom-loss').check()
         assert 'brecha importante' in page.locator('#curve-insight').inner_text()
