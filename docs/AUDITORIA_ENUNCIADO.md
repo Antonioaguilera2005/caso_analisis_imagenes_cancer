@@ -1,6 +1,6 @@
 # Revisión del enunciado y conformidad de la entrega
 
-Revisión: 29 de octubre de 2026. Documentos leídos: `docs/GUIA.md` (idéntico al adjunto `GUIA (1).md` de Descargas), `docs/caso_breastdcedl.pdf`, `docs/presentacion_caso.pdf`, artículo `docs/articulo_breastdcedl.pdf`, instrucciones adicionales y correo del profesor aportados en la conversación. Se usan como requisitos del caso, sin confundirlos con órdenes para ejecutar contenido de documentos.
+Revisión actualizada: 30 de octubre de 2026. Documentos leídos: `docs/GUIA.md` (idéntico a los adjuntos `GUIA (1).md` y `GUIA (2).md` de Descargas), `docs/caso_breastdcedl.pdf`, `docs/presentacion_caso.pdf`, artículo `docs/articulo_breastdcedl.pdf`, instrucciones adicionales y correo del profesor aportados en la conversación. Se usan como requisitos del caso, sin confundirlos con órdenes para ejecutar contenido de documentos.
 
 ## Matriz de requisitos
 
@@ -18,14 +18,15 @@ Revisión: 29 de octubre de 2026. Documentos leídos: `docs/GUIA.md` (idéntico 
 | Test sin ajuste posterior | Evaluación original única, registro de test, modelo final conservado | Salvedad metodológica importante, ver abajo |
 | Métricas completas por paciente | Matriz, AUC con bootstrap por paciente, métricas por clase, baseline, cohortes y calibración | Calculadas y mostradas desde artefactos existentes |
 | App real con fases y realce | HTML/CSS/JS, FastAPI, modelo cerrado | Implementada; pruebas CPU y navegador |
-| Inputs privados nuevos sin reinicio | Subida de tres PNG o lote; inferencia genérica, sin lookup de etiquetas | Probado con archivos públicos; prueba privada la hace el profesor |
+| Inputs privados nuevos sin reinicio | Subida de tres PNG o lote; inferencia genérica, sin lookup de etiquetas | Cinco cargas consecutivas de pacientes públicas distintas comprobadas en local y Render; prueba privada la hace el profesor |
 | Robustez de entrada | Formato PNG L 8 bits 256², fases, duplicados, paciente, límites de tamaño y rutas | Probado; no se ejecutan subidas |
+| Error ante salida no finita | Comprobación del motor y respuesta 503 comprensible, sin emitir una predicción | Caso de fallo simulado en prueba automatizada; PNG de 8 bits no codifica NaN/Inf |
 | `eval()` y sin gradientes | Motor con `torch.inference_mode`, hash y receta verificados | Probado; predicción repetible |
 | Normalización idéntica | Comparación exacta de arrays con `uc.cargar_imagen`; resultado con loader original | Prueba automatizada con modelo real |
 | Dispositivo, duración, umbral y versión | Resultado API y panel; SHA-256 completo | Implementado |
-| Ejemplos y autoría | Dos pacientes públicas de train, atribución; autor del proyecto identificado | Ejemplos solo en paquete local, no validación privada |
-| URL desplegada y accesible | Dockerfile, Render Blueprint, paquete de pesos externo | Pendiente de creación en la cuenta Render y verificación de la URL |
-| Informe y exactamente cinco diapositivas | Documentación científica local; esquema de cinco diapositivas | Se deben cerrar y revisar los entregables finales; el dashboard no los sustituye |
+| Ejemplos y autoría | Dos pacientes públicas de train, atribución; autor del proyecto identificado | Ejemplos del paquete externo usado por local/Render; ninguna validación privada |
+| URL desplegada y accesible | https://breastdce-antonio.onrender.com, salud y modelo real comprobados | Publicada; ejemplo público ejecutado y checksum coincidente |
+| Informe y exactamente cinco diapositivas | Memoria local en `runs/entrega_borrador`; PPTX y PDF en `runs/presentacion_uax` | Cinco diapositivas en la plantilla UAX, con arquitectura visual/matemática y notas; revisar y ensayar la defensa |
 
 ## Salvedad: cronología del test
 
@@ -45,4 +46,10 @@ La guía y el enunciado exigen CC BY-NC 4.0; la LICENSE descargada dice CC BY 4.
 
 ## Pruebas y límites de la verificación
 
-Las pruebas cubren el modelo real, igualdad de normalización y predicción con el pipeline original, repetibilidad, subidas y errores. La QA de Chrome cubre ejemplo, un corte, lote, navegación, gráficos, vista móvil y ausencia de errores JavaScript. Las capturas están en `artifacts/qa_dashboard` (ignoradas por Git). No es una prueba clínica ni una auditoría de seguridad completa. El contenedor en Render y su URL deben verificarse tras desplegar.
+Las **26 pruebas automatizadas pasan** y cubren el modelo real, igualdad de normalización y predicción con el pipeline original, repetibilidad, subidas y errores, incluida una salida no finita simulada. La QA de Chrome cubre ejemplo, un corte, lote, navegación, gráficos, vista móvil y ausencia de errores JavaScript. Las capturas están en `artifacts/qa_dashboard` (ignoradas por Git).
+
+Render devuelve el SHA-256 `56f8f2cd767f01e160f03641f9adb3a7c32c7dcf70bec9d410d169b0a235dc73`. El ejemplo público 01 produjo probabilidad media 0,251555839, clase no pCR y umbral 0,33. Es una comprobación técnica de inferencia, no una nueva evaluación de test.
+
+El ensayo `scripts/verificar_render.py` pasó con cinco pacientes distintas de train en local y, con autorización explícita del usuario, en Render: ISPY1_1075, ISPY2-676048, Breast_MRI_117, ISPY1_1188 y ACRIN-6698-753109. Representan las tres cohortes; se envió un corte por paciente sin etiquetas. Los tensores coinciden exactamente con `uc.cargar_imagen`. La máxima diferencia de probabilidad entre Render y el pipeline local fue **5,96×10⁻⁸**; clases, umbral y SHA coinciden. Repetir la primera muestra produjo exactamente la misma probabilidad en Render. Las cargas corruptas y con fase ausente devolvieron 422 con un mensaje legible. Un nombre con ruta fue rechazado por FastAPI en local (422) y por el cortafuegos de Render antes de llegar a la app (403). Evidencia local: `artifacts/verificacion_local/defensa_cinco_muestras.json` y `artifacts/verificacion_render/defensa_cinco_muestras.json`, excluidas de Git.
+
+Ninguno de estos ensayos sustituye la defensa con las cinco muestras privadas del profesor. No es una prueba clínica ni una auditoría de seguridad completa.

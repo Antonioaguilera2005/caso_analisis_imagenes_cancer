@@ -6,19 +6,21 @@ la predicción final se obtiene por paciente.
 
 ## Estado y documentación
 
-Dashboard HTML/CSS/JavaScript + FastAPI implementado y probado localmente con el
-modelo definitivo. [Abrir y desplegar en Render](docs/DASHBOARD_RENDER.md).
-La URL pública está pendiente de creación y verificación en Render.
+Dashboard HTML/CSS/JavaScript + FastAPI con el modelo definitivo, desplegado en
+[breastdce-antonio.onrender.com](https://breastdce-antonio.onrender.com).
+Verificados el estado, la identidad del modelo, un ejemplo y cinco cargas de
+pacientes públicas distintas en Render, con predicciones coincidentes con el pipeline local.
+[Abrir localmente y configuración de Render](docs/DASHBOARD_RENDER.md).
 [Auditoría del enunciado y salvedades](docs/AUDITORIA_ENUNCIADO.md), incluida
 la exploración de variantes posterior al test original.
 
 Pipeline de entrenamiento y análisis implementado; hay validación cruzada y una
 primera evaluación final archivadas localmente en `runs/`. Los resultados y pesos
-no se publican en Git. La comparación adicional con edad y menopausia está
-preparada: [instrucciones del experimento clínico](docs/EXPERIMENTO_CLINICO.md).
-La siguiente comparación usa solo imágenes y
-[doble convolución por bloque](docs/EXPERIMENTO_DOBLE_CONVOLUCION.md).
-También está preparada la [comparación con tasa de aprendizaje menor](docs/EXPERIMENTO_LR_BAJA.md).
+no se publican en Git. Se han comparado [edad y menopausia](docs/EXPERIMENTO_CLINICO.md),
+[doble convolución por bloque](docs/EXPERIMENTO_DOBLE_CONVOLUCION.md) y
+[tasa de aprendizaje menor](docs/EXPERIMENTO_LR_BAJA.md). La aplicación conserva
+la CNN original de solo imágenes; las variantes no aportaron una mejora consistente.
+[Presentación en la plantilla UAX: exactamente cinco diapositivas](docs/PRESENTACION.md).
 Las pruebas técnicas usan pocos pacientes y no estiman rendimiento predictivo.
 
 Para abrir el dashboard en este portátil, con el paquete local preparado:

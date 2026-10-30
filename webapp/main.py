@@ -133,7 +133,14 @@ def archivo_ejemplo(request: Request, ejemplo: str, nombre: str):
 @app.post('/api/ejemplos/{ejemplo}/predecir')
 async def predecir_ejemplo(request: Request, ejemplo: str):
     x, ids = preparar_archivos(imagenes_ejemplo(request, ejemplo))
-    return await run_in_threadpool(request.app.state.motor.predecir, x, ids)
+    return await ejecutar_inferencia(request, x, ids)
+
+
+async def ejecutar_inferencia(request, x, ids):
+    try:
+        return await run_in_threadpool(request.app.state.motor.predecir, x, ids)
+    except ValueError as exc:
+        raise HTTPException(503, 'El modelo ha producido una salida no válida o no finita. No se ha emitido una predicción; revisa las imágenes o vuelve a intentarlo.') from exc
 
 
 @app.post('/api/predecir')
@@ -151,7 +158,7 @@ async def predecir(request: Request):
             x, ids = preparar_archivos(archivos)
     except (ValueError, MultiPartException) as exc:
         raise HTTPException(422, str(exc)) from exc
-    return await run_in_threadpool(request.app.state.motor.predecir, x, ids)
+    return await ejecutar_inferencia(request, x, ids)
 
 
 @app.get('/api/figuras/{nombre}')

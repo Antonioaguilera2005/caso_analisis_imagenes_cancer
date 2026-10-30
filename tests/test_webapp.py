@@ -1,5 +1,6 @@
 import io
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -90,6 +91,14 @@ class IntegracionWeb(unittest.TestCase):
         self.assertEqual(c.get('/api/ejemplos/no-existe/archivo/no.png').status_code,404)
         self.assertEqual(c.get('/api/figuras/no.png').status_code,404)
         self.assertEqual(c.post('/api/predecir',headers={'Content-Length':str(17*1024*1024)}).status_code,413)
+
+    def test_error_claro_salida_no_finita(self):
+        motor=self.client.app.state.motor
+        eid=motor.resumen['ejemplos'][0]['id']
+        with patch.object(motor,'predecir',side_effect=ValueError('Predicción no finita')):
+            r=self.client.post(f'/api/ejemplos/{eid}/predecir')
+        self.assertEqual(r.status_code,503)
+        self.assertIn('no finita',r.json()['detail'])
 
 
 if __name__=='__main__':

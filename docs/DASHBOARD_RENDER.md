@@ -34,7 +34,7 @@ El paquete es serialización PyTorch de origen propio; nunca se acepta un modelo
 
 Para seguir la pantalla de creación de servicio sin tecnicismos, usar [RENDER_PASOS_FACILES.md](RENDER_PASOS_FACILES.md). La carpeta local `PARA_RENDER` contiene una copia del ZIP con un nombre fácil de localizar y el checksum listo para copiar; está excluida de Git.
 
-No hay una URL pública creada todavía. Se necesita acceso a la cuenta Render y alojar el ZIP fuera de Git.
+La aplicación está publicada en **https://breastdce-antonio.onrender.com**, verificada el 30/10/2026. `/api/health` devuelve el checksum esperado y el ejemplo público produce el mismo resultado que el paquete local. Con autorización del usuario también se comprobaron cinco pacientes públicas distintas: diferencia máxima de probabilidad 5,96×10⁻⁸ frente al pipeline del portátil, mismas clases y repetición exacta en Render. El ZIP se aloja fuera de Git. Los pasos siguientes sirven para reproducir la configuración; no hace falta crear un segundo servicio.
 
 1. Subir `artifacts/dashboard_bundle.zip` a un almacenamiento que entregue el archivo por URL HTTPS directa. Conservar la huella de `artifacts/dashboard_bundle.sha256`.
 2. Entrar en Render, conectar el repositorio `Antonioaguilera2005/caso_analisis_imagenes_cancer` y crear un **Blueprint** usando `render.yaml` (alternativa: Web Service con runtime Docker).
@@ -53,6 +53,14 @@ El Blueprint usa plan gratuito; no se ha contratado nada. Render documenta suspe
 ```
 
 Las pruebas reales de app requieren el paquete local; si no existe, se omiten explícitamente. QA de navegador opcional: instalar Playwright y ejecutar `scripts/probar_dashboard_navegador.py` con Chrome instalado y el servidor en puerto 8000. No se incluye Playwright en la imagen Docker.
+
+El ensayo de cinco pacientes distintas puede ejecutarse sin enviar imágenes fuera del portátil:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/verificar_render.py --local --salida artifacts/verificacion_local/defensa_cinco_muestras.json
+```
+
+Selecciona cinco pacientes públicas de train, representa las tres cohortes y compara los tensores y probabilidades con las utilidades originales. No calcula métricas de rendimiento ni vuelve a evaluar test. Repite la primera carga y comprueba archivos corruptos, fases ausentes y nombres con rutas. La opción `--url https://breastdce-antonio.onrender.com` hace el mismo ensayo contra Render y **envía esas imágenes al servidor**: usarla solo con autorización del propietario de los datos. La prueba privada del profesor sigue pendiente y no debe publicarse.
 
 ## Antes de defender
 
