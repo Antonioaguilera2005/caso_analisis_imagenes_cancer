@@ -85,7 +85,7 @@ def main():
         informe['repetibilidad_exacta'] = True
         informe['errores'] = []
         for nombre, carga in [
-            ('corrupto', [('PRE', ('corrupto.png', b'no es una imagen', 'image/png'))]),
+            ('corrupto', [('PRE', ('corrupto.png', b'no es una imagen', 'image/png'))] + primera_carga[1:]),
             ('fase_ausente', primera_carga[:2]),
             ('ruta_prohibida', [('PRE', ('../PRE.png', primera_carga[0][1][1], 'image/png'))] + primera_carga[1:]),
         ]:
