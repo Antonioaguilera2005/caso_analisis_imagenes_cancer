@@ -26,7 +26,7 @@ Revisión actualizada: 30 de octubre de 2026. Documentos leídos: `docs/GUIA.md`
 | Dispositivo, duración, umbral y versión | Resultado API y panel; SHA-256 completo | Implementado |
 | Ejemplos y autoría | Dos pacientes públicas de train, atribución; autor del proyecto identificado | Ejemplos del paquete externo usado por local/Render; ninguna validación privada |
 | URL desplegada y accesible | https://breastdce-antonio.onrender.com, salud y modelo real comprobados | Publicada; ejemplo público ejecutado y checksum coincidente |
-| Informe y exactamente cinco diapositivas | Memoria local en `runs/entrega_borrador`; PPTX y PDF en `runs/presentacion_uax` | Cinco diapositivas en la plantilla UAX, con arquitectura visual/matemática y notas; revisar y ensayar la defensa |
+| Informe, pesos y exactamente cinco diapositivas | Informe PDF de nueve páginas y ZIP de pesos en `runs/entrega_final`; PPTX/PDF en `runs/presentacion_uax` | ZIP íntegro y pesos cargados con hash verificado; cinco diapositivas UAX; revisar el informe y ensayar la defensa |
 
 ## Salvedad: cronología del test
 

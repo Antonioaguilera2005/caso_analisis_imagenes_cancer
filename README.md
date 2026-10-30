@@ -21,6 +21,7 @@ no se publican en Git. Se han comparado [edad y menopausia](docs/EXPERIMENTO_CLI
 [tasa de aprendizaje menor](docs/EXPERIMENTO_LR_BAJA.md). La aplicación conserva
 la CNN original de solo imágenes; las variantes no aportaron una mejora consistente.
 [Presentación en la plantilla UAX: exactamente cinco diapositivas](docs/PRESENTACION.md).
+[Archivos de entrega: informe PDF y pesos definitivos](docs/ENTREGA_FINAL.md).
 Las pruebas técnicas usan pocos pacientes y no estiman rendimiento predictivo.
 
 Para abrir el dashboard en este portátil, con el paquete local preparado:
